@@ -10,5 +10,4 @@ bs4
 langchain.text_splitter
 langchain_ollama
 langchain.chains
-langchain_ollama
 tqdm
