@@ -4,28 +4,28 @@ from bs4 import BeautifulSoup
 import requests
 import re 
 import time
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
-from langchain_ollama import OllamaEmbeddings
+#from langchain.text_splitter import RecursiveCharacterTextSplitter
+#from langchain.vectorstores import FAISS
+#from langchain_ollama import OllamaEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA, MapReduceChain, LLMChain,ReduceDocumentsChain
-from langchain.chains.combine_documents.stuff import StuffDocumentsChain
-from langchain.chains.question_answering import load_qa_chain
+#from langchain.chains.combine_documents.stuff import StuffDocumentsChain
+#from langchain.chains.question_answering import load_qa_chain
 
 from langchain_ollama import OllamaLLM
 
 import json
 import pandas as pd
-from tqdm import tqdm  # Add this import at the top of the file
-import concurrent.futures
+import tqdm  
+#import concurrent.futures
 import os
 from functools import partial
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
+#from langchain.retrievers import ContextualCompressionRetriever
+#from langchain.retrievers.document_compressors import LLMChainExtractor
 
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-from langchain.chains.combine_documents import create_stuff_documents_chain
+#from langchain.schema.runnable import RunnablePassthrough
+#from langchain.schema.output_parser import StrOutputParser
+#from langchain.chains.combine_documents import create_stuff_documents_chain
 # sudo systemctl edit ollama.service, open in vim (preferably)
 
 
