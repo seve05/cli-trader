@@ -1,7 +1,6 @@
 requests
 pandas
 matplotlib
-matplotlib.pyplot
 tabulate
 bs4
 yfinance
