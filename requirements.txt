@@ -1,0 +1,14 @@
+requests
+pandas
+matplotlib
+matplotlib.pyplot
+tabulate
+bs4
+yfinance
+ollama
+bs4
+langchain.text_splitter
+langchain_ollama
+langchain.chains
+langchain_ollama
+tqdm
