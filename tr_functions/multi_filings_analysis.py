@@ -372,7 +372,7 @@ def Multi_pipeline(company_name):
 
 
 
-if __name__ == "__main__"   #if run as main python program:
+if __name__ == "__main__":   #if run as main python program:
     user_input = input("Enter company name or ticker symbol: ").upper()
     
     try:
