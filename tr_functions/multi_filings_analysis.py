@@ -4,9 +4,6 @@ from bs4 import BeautifulSoup
 import requests
 import re 
 import time
-#from langchain.text_splitter import RecursiveCharacterTextSplitter
-#from langchain.vectorstores import FAISS
-#from langchain_ollama import OllamaEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA, MapReduceChain, LLMChain,ReduceDocumentsChain
 #from langchain.chains.combine_documents.stuff import StuffDocumentsChain
@@ -17,27 +14,18 @@ from langchain_ollama import OllamaLLM
 import json
 import pandas as pd
 import tqdm  
-#import concurrent.futures
 import os
 from functools import partial
-#from langchain.retrievers import ContextualCompressionRetriever
-#from langchain.retrievers.document_compressors import LLMChainExtractor
-
-#from langchain.schema.runnable import RunnablePassthrough
-#from langchain.schema.output_parser import StrOutputParser
-#from langchain.chains.combine_documents import create_stuff_documents_chain
 # sudo systemctl edit ollama.service, open in vim (preferably)
 
 
 
 def cut_string(text, sequence):
-    index = text.find(sequence) #reads string to find sequence
+    index = text.find(sequence) #read string to find sequence
     
-    # If the sequence is found, return the part of the string before the sequence plus the sequence itself
     if index != -1:
-        return text[:index + len(sequence)]#slices string 
+        return text[:index + len(sequence)]  
     else:
-        # If the sequence isn't found, return the original text or handle it as needed
         return text
 
 
@@ -60,15 +48,12 @@ def load_hundred_filingnum(cik):
     response = requests.get(url, headers=headers)
     data = response.json()
     
-    # List of form types we want to include
     target_forms = ['10-K', '10-Q', '8-K', '13D', '13G', 'SC 13D', 'SC 13G']
     
-    # Get the recent filings data
     recent_forms = data['filings']['recent']['form']
     recent_accessions = data['filings']['recent']['accessionNumber']
     recent_dates = data['filings']['recent']['filingDate']
     
-    # Create list to store filtered filing numbers
     filtered_filings = []
     filtered_forms = []
     filtered_dates = []
@@ -92,15 +77,14 @@ def load_hundred_filingnum(cik):
     for i, (form, acc, date) in enumerate(zip(filtered_forms, filtered_filings, filtered_dates)):
         print(f"{i+1}. Form {form} ({date}): {acc}")
     
-    while True:
-        try:
-            selection = int(input("\nSelect a filing to analyze (1-{0}): ".format(len(filtered_filings))))
-            if 1 <= selection <= len(filtered_filings):
-                return [filtered_filings[selection-1]]  # Return single filing as list
-            else:
-                print(f"Please enter a number between 1 and {len(filtered_filings)}")
-        except ValueError:
-            print("Please enter a valid number")
+    try:
+        selection = int(input("\nSelect a filing to analyze (1-{0}): ".format(len(filtered_filings))))
+        if 1 <= selection <= len(filtered_filings):
+            return [filtered_filings[selection-1]]  # Return single filing as list
+        else:
+            print(f"Please enter a number between 1 and {len(filtered_filings)}")
+    except ValueError:
+        print("Please enter a valid number")
 
 
 
@@ -168,14 +152,14 @@ def scrape_hundredfilings(cik):
     file.close()
 
 
+
 def clean_filings(inp):
-    """Lighter cleaning function for pre-cleaned HTML content"""
     text = inp[0]
     
     # Basic cleaning
     text = re.sub(r'\s+', ' ', text)  # normalize whitespace
     text = re.sub(r'[\r\n]+', '\n', text)  # normalize newlines
-    text = re.sub(r'[^\x00-\x7F]+', '', text)  # remove non-ASCII characters
+    text = re.sub(r'[^\x00-\x7F]+', '', text)  # ASCII Alphabet 8bits is all you need)
     
     # Remove common SEC filing artifacts
     text = re.sub(r'Table of Contents', '', text, flags=re.IGNORECASE)
@@ -198,12 +182,10 @@ def load_documents(filename):
 
 
 def get_company_cik(company_name):
-    """Get CIK number for a company name from SEC's company tickers json."""
-    # Download and cache the company tickers data if not already present
+
     try:
         df = pd.read_json('company_tickers.json').T
     except FileNotFoundError:
-        # Fetch and save the data if not cached
         url = "https://www.sec.gov/files/company_tickers.json"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
@@ -212,7 +194,6 @@ def get_company_cik(company_name):
         df = pd.read_json(response.text).T
         df.to_json('company_tickers.json')
     
-    # Convert company names to lowercase for case-insensitive matching
     df['title'] = df['title'].str.lower()
     company_name = company_name.lower()
     
@@ -234,20 +215,53 @@ def get_company_cik(company_name):
     cik = str(matches.iloc[0]['cik_str']).zfill(10)
     return cik
 
+
+
 def getlatestfiling(cik):
-    """Modified to accept CIK as parameter"""
     url = f"https://data.sec.gov/submissions/CIK{cik}.json"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
     response = requests.get(url, headers=headers)
     recent = response.json()['filings']['recent']['accessionNumber'][0]
     return recent
 
+
+
+def get_company_info_from_ticker(ticker):
+    #Get company name and CIK from ticker symbol from json
+    try:
+        df = pd.read_json('company_tickers.json').T
+    except FileNotFoundError:
+        # Fetch and save the data if not cached
+        url = "https://www.sec.gov/files/company_tickers.json"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers)
+        df = pd.read_json(response.text).T
+        df.to_json('company_tickers.json')
+    
+    # Convert ticker to uppercase for matching
+    ticker = ticker.upper()
+    
+    # Try to find an exact match for the ticker
+    matches = df[df['ticker'] == ticker]
+    
+    if len(matches) == 0:
+        raise ValueError(f"No company found with ticker symbol '{ticker}'")
+    
+    # Get the company info
+    company_info = matches.iloc[0]
+    return {
+        'name': company_info['title'],
+        'cik': str(company_info['cik_str']).zfill(10),
+        'ticker': company_info['ticker']
+    }
+
+
+
 def clean_llm_output(text):
-    """Remove content between <think> and </think> tags from LLM output"""
     # Use regex to remove anything between <think> and </think> tags (including the tags)
     cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Remove any extra whitespace that might be left
-    cleaned_text = re.sub(r'\n\s*\n', '\n\n', cleaned_text)
     return cleaned_text.strip()
 
 
@@ -355,38 +369,10 @@ def Multi_pipeline(company_name):
         print(f"Error: {e}")
         return
 
-def get_company_info_from_ticker(ticker):
-    """Get company name and CIK from ticker symbol using SEC's company tickers json."""
-    try:
-        df = pd.read_json('company_tickers.json').T
-    except FileNotFoundError:
-        # Fetch and save the data if not cached
-        url = "https://www.sec.gov/files/company_tickers.json"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers)
-        df = pd.read_json(response.text).T
-        df.to_json('company_tickers.json')
-    
-    # Convert ticker to uppercase for matching
-    ticker = ticker.upper()
-    
-    # Try to find an exact match for the ticker
-    matches = df[df['ticker'] == ticker]
-    
-    if len(matches) == 0:
-        raise ValueError(f"No company found with ticker symbol '{ticker}'")
-    
-    # Get the company info
-    company_info = matches.iloc[0]
-    return {
-        'name': company_info['title'],
-        'cik': str(company_info['cik_str']).zfill(10),
-        'ticker': company_info['ticker']
-    }
 
-if __name__ == "__main__":
+
+
+if __name__ == "__main__"   #if run as main python program:
     user_input = input("Enter company name or ticker symbol: ").upper()
     
     try:
@@ -409,3 +395,9 @@ if __name__ == "__main__":
 #        -   add in stocks and shareprice, revenue  as context for more robust answer
 #
 #   good so far except for the 10K which is too large (approx 100k tokens)
+#
+#       batch processing for enything above 50k length, split into parts 
+#       then during q and a LL M needs to be able to access documents to answer questions, no vectordb o embeddings 
+#       - create hash map for every documents contents such that llm can select which document to open 
+#       (dont have to search every document)
+#               - this happens during the splitting process (creates hashmap/dict)
