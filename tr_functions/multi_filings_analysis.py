@@ -16,7 +16,6 @@ import pandas as pd
 import tqdm  
 import os
 from functools import partial
-# sudo systemctl edit ollama.service, open in vim (preferably)
 
 
 
@@ -239,11 +238,8 @@ def get_company_info_from_ticker(ticker):
         response = requests.get(url, headers=headers)
         df = pd.read_json(response.text).T
         df.to_json('company_tickers.json')
-    
-    # Convert ticker to uppercase for matching
-    ticker = ticker.upper()
-    
-    # Try to find an exact match for the ticker
+      
+    ticker = ticker.upper()    
     matches = df[df['ticker'] == ticker]
     
     if len(matches) == 0:
@@ -288,9 +284,8 @@ def Multi_pipeline(company_name):
             temperature=0,  # Lower temperature for more factual responses, 0 for no hallucination
         ) ##############################################################################################################################llmmodel
         
-        # Get the full document text
         full_document = finaldocuments[0]
-        # Create a summary prompt template
+        
         summary_prompt_template = """You are an expert financial analyst assistant analyzing SEC filings.
         
         Below is the full text of an SEC filing. First, summarize this filing in a structured format with the following information:
@@ -310,7 +305,7 @@ def Multi_pipeline(company_name):
         
         SUMMARY_PROMPT = PromptTemplate.from_template(full_document)
         
-        # Create a QA prompt template that uses the entire document
+        # QA prompt template
         qa_prompt_template = """You are an expert financial analyst assistant analyzing SEC filings.
         
         Below is the full text of an SEC filing. Use this document to answer the question at the end.
@@ -326,13 +321,11 @@ def Multi_pipeline(company_name):
         
         QA_PROMPT = PromptTemplate.from_template(qa_prompt_template)
         
-        # Generate an overview of the filing
+        # Overview of the filing
         print("\nGenerating an overview of the filing...")
         
         try:
-            # Create a chain for the summary
-            summary_chain = LLMChain(llm=qa_llm, prompt=SUMMARY_PROMPT)
-            
+            summary_chain = LLMChain(llm=qa_llm, prompt=SUMMARY_PROMPT)  
             # Generate the summary and clean it
             raw_summary = summary_chain.run(document=full_document)
             summary = clean_llm_output(raw_summary)
@@ -351,10 +344,7 @@ def Multi_pipeline(company_name):
                 break
             
             try:
-                # Create a chain for Q&A
                 qa_chain = LLMChain(llm=qa_llm, prompt=QA_PROMPT)
-                
-                # Generate the answer using the full document and clean it
                 raw_answer = qa_chain.run(document=full_document, question=question)
                 answer = clean_llm_output(raw_answer)
                 
