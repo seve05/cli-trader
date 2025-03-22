@@ -280,7 +280,7 @@ def Multi_pipeline(company_name):
         
         # Initialize LLM
         qa_llm = OllamaLLM(
-            model='deepseek-r1:7b',
+            model='gemma3:12b',
             temperature=0,  # Lower temperature for more factual responses, 0 for no hallucination
         ) ##############################################################################################################################llmmodel
         
