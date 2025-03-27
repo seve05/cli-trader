@@ -162,7 +162,6 @@ def clean_filings(inp):
     
     # Remove common SEC filing artifacts
     text = re.sub(r'Table of Contents', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'^\s*\[\d+\]\s*$', '', text, flags=re.MULTILINE)  # remove page numbers
     
     # Remove any remaining HTML entities
     text = re.sub(r'&[a-zA-Z]+;', ' ', text)
