@@ -65,7 +65,7 @@ def load_hundred_filingnum(cik):
             filtered_forms.append(form)
             filtered_dates.append(date)
             count += 1
-            if count >= 10:  # Show last 10 filings #############################################################################################################################filingsnum
+            if count >= 25:  # Show last 25 filings #############################################################################################################################filingsnum
                 break
     
     if not filtered_filings:
