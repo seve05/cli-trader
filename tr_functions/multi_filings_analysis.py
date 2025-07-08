@@ -57,15 +57,13 @@ def load_hundred_filingnum(cik):
     filtered_forms = []
     filtered_dates = []
     count = 0
-    
-    # Iterate through the filings and filter by form type
     for form, accession, date in zip(recent_forms, recent_accessions, recent_dates):
         if form in target_forms:
             filtered_filings.append(accession)
             filtered_forms.append(form)
             filtered_dates.append(date)
             count += 1
-            if count >= 25:  # Show last 25 filings #############################################################################################################################filingsnum
+            if count >= 25:  #show last 25 filings #############################################################################################################################filingsnum
                 break
     
     if not filtered_filings:
@@ -88,11 +86,11 @@ def load_hundred_filingnum(cik):
 
 
 def scrape_hundredfilings(cik):
-    file = open('documentstore.txt','w') #clear the file
+    file = open('documentstore.txt','w') #clear file
     file.write(" ")
     file.close()
     filingnumbers = load_hundred_filingnum(cik)
-    if not filingnumbers:  # Handle case where no filings were found
+    if not filingnumbers:  
         return
         
     for filingnum in filingnumbers:
@@ -102,12 +100,11 @@ def scrape_hundredfilings(cik):
             'Accept-Encoding':'gzip, deflate'
         }
         
-        # First get the index page to find the main document
         index_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{nodash}/index.json"
         index_response = requests.get(index_url, headers=header)
         index_data = index_response.json()
         
-        # Find the main document (usually form 10-K, 10-Q, etc.)
+        #find the main document 10-K 10-Q
         main_doc = None
         for file in index_data['directory']['item']:
             if file['name'].endswith('.htm') and not file['name'].startswith('R'):
@@ -118,27 +115,24 @@ def scrape_hundredfilings(cik):
             print(f"Could not find main document for filing {filingnum}")
             continue
             
-        # Get the document content using the document viewer URL
+        #get document content using document URL
         doc_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{nodash}/{main_doc}"
         print(f"\nFetching filing: {doc_url}")
         doc_response = requests.get(doc_url, headers=header)
-        
-        # Parse HTML with BeautifulSoup
+   
         soup = BeautifulSoup(doc_response.text, 'html.parser')
         
-        # Remove unwanted elements
+        #remove unwanted elements
         for tag in soup.find_all(['script', 'style', 'table']):
-            tag.decompose()
+            tag.decompose() #remove elemtn along with children
             
-        # Extract text content
         text_content = soup.get_text(separator=' ', strip=True)
+   
+        text_content = re.sub(r'\s+', ' ', text_content)  #remove extra whitespace
+        text_content = re.sub(r'^\s*$\n', '', text_content, flags=re.MULTILINE)  #remove empty lines
         
-        # Basic cleaning
-        text_content = re.sub(r'\s+', ' ', text_content)  # Remove extra whitespace
-        text_content = re.sub(r'^\s*$\n', '', text_content, flags=re.MULTILINE)  # Remove empty lines
-        
-        # Try to find the main content section (often between ITEM 1 and SIGNATURES)
-        start_marker = re.search(r'ITEM\s+1\.?', text_content, re.IGNORECASE)
+        #try to find main content section (often between ITEM 1 and SIGNATURES)
+        start_marker = re.search(r'ITEM\s+1\.?', text_content, re.IGNORECASE) # ignorecase for text- insensitive search
         end_marker = re.search(r'SIGNATURES?', text_content, re.IGNORECASE)
         
         if start_marker and end_marker:
@@ -155,13 +149,9 @@ def scrape_hundredfilings(cik):
 def clean_filings(inp):
     text = inp[0]
     
-    # Basic cleaning
     text = re.sub(r'\s+', ' ', text)  # normalize whitespace
     text = re.sub(r'[\r\n]+', '\n', text)  # normalize newlines
     text = re.sub(r'[^\x00-\x7F]+', '', text)  # ASCII Alphabet 8bits is all you need)
-    
-    # Remove common SEC filing artifacts
-    text = re.sub(r'Table of Contents', '', text, flags=re.IGNORECASE)
     
     # Remove any remaining HTML entities
     text = re.sub(r'&[a-zA-Z]+;', ' ', text)
@@ -195,10 +185,10 @@ def get_company_cik(company_name):
     df['title'] = df['title'].str.lower()
     company_name = company_name.lower()
     
-    # Try to find an exact match first
+    #try to find exact match first
     matches = df[df['title'] == company_name]
     if len(matches) == 0:
-        # If no exact match, try partial matching
+        #if no exact match try partial match
         matches = df[df['title'].str.contains(company_name, case=False, na=False)]
     
     if len(matches) == 0:
@@ -209,7 +199,7 @@ def get_company_cik(company_name):
             print(f"- {row['title']} (CIK: {row['cik_str']})")
         raise ValueError("Please provide a more specific company name")
     
-    # Pad CIK with leading zeros to 10 digits
+    # look for CIK with leading zeros 10 digits
     cik = str(matches.iloc[0]['cik_str']).zfill(10)
     return cik
 
@@ -225,11 +215,9 @@ def getlatestfiling(cik):
 
 
 def get_company_info_from_ticker(ticker):
-    #Get company name and CIK from ticker symbol from json
     try:
         df = pd.read_json('company_tickers.json').T
     except FileNotFoundError:
-        # Fetch and save the data if not cached
         url = "https://www.sec.gov/files/company_tickers.json"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
@@ -244,7 +232,6 @@ def get_company_info_from_ticker(ticker):
     if len(matches) == 0:
         raise ValueError(f"No company found with ticker symbol '{ticker}'")
     
-    # Get the company info
     company_info = matches.iloc[0]
     return {
         'name': company_info['title'],
@@ -255,7 +242,7 @@ def get_company_info_from_ticker(ticker):
 
 
 def clean_llm_output(text):
-    # Use regex to remove anything between <think> and </think> tags (including the tags)
+    #remove anything between <think> tags (including the tags)
     cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
     return cleaned_text.strip()
 
@@ -280,7 +267,7 @@ def Multi_pipeline(company_name):
         # Initialize LLM
         qa_llm = OllamaLLM(
             model='gemma3:12b',
-            temperature=0,  # Lower temperature for more factual responses, 0 for no hallucination
+            temperature=0,  #lower temperature for more factual responses, 0 for no hallucination
         ) ##############################################################################################################################llmmodel
         
         full_document = finaldocuments[0]
@@ -304,7 +291,6 @@ def Multi_pipeline(company_name):
         
         SUMMARY_PROMPT = PromptTemplate.from_template(full_document)
         
-        # QA prompt template
         qa_prompt_template = """You are an expert financial analyst assistant analyzing SEC filings.
         
         Below is the full text of an SEC filing. Use this document to answer the question at the end.
@@ -320,12 +306,10 @@ def Multi_pipeline(company_name):
         
         QA_PROMPT = PromptTemplate.from_template(qa_prompt_template)
         
-        # Overview of the filing
         print("\nGenerating an overview of the filing...")
         
         try:
             summary_chain = LLMChain(llm=qa_llm, prompt=SUMMARY_PROMPT)  
-            # Generate the summary and clean it
             raw_summary = summary_chain.run(document=full_document)
             summary = clean_llm_output(raw_summary)
             
@@ -338,8 +322,8 @@ def Multi_pipeline(company_name):
 
         print("\nEntering Q&A mode. Type 'exit' to quit.")
         while True:
-            question = input("\nAsk a question about the filing (or 'exit' to quit): ")
-            if question.lower() == 'exit':
+            question = input("\nAsk a question about the filing or 'q' to quit: ")
+            if question.lower() == 'q':
                 break
             
             try:
