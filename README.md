@@ -16,6 +16,7 @@ at the time because this was the first use-case I could think of as I discovered
 I might come back to this in the future. With new knowledge and better resources this could very well work.
 
 Added quarterly overview of financials trying out Cursor for this.(its ok.. more precise prompts == better results) 
+
 This requires Ollama install and the specific model you want to use.
 1. install dependencies: `pip install -r requirements.txt`
 2. navigate to folder `cli_trader/tr_functions`
