@@ -5,7 +5,9 @@ such that it would be able to explain the most current filing in context.
 This would be useful if you need to quickly make decisions or even just for looking up different companies, for DD essentially.
 
 Challenges: I tried to program this by implementing a RAG solution, but quickly found out that this approach is not the way,
-as many companies structure their filings differently and I could not get consistent enough data to generate useful embeddings.
+as many companies structure their filings differently and I could not get consistent enough data to generate useful embeddings. Its also compute 
+intensive to always re-embed these filings, this could be solved by simply storing them long-term and updating at start up but this 
+was beyond the scope of this experiment.
 Second approach simply loaded it all into the context window and then the user is able to prompt questions about it. This is limited
 by the size of the models context window and VRAM.
 All in all for local models I find a simple summary of single filings more useful, being able to ask questions about some terms, be it 
