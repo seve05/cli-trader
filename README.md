@@ -11,7 +11,7 @@ was beyond the scope of this experiment.
 Second approach simply loaded it all into the context window and then the user is able to prompt questions about it. This is limited
 by the size of the models context window and VRAM.
 All in all for local models I find a simple summary of single filings more useful, being able to ask questions about some terms, be it 
-domain specific or even legal formalities which is why this is only present in the last version.
+domain specific or even legal formalities which is why only this is present in the last version.
 
 This project is by no means complete, I cannot even guarantee that it works in its current state because of the dependency mayhem. 
 It was exploratory for me at the time because this was the first use-case I could think of as I first discovered that these models could be run locally.
